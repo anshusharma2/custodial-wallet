@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  # Mongodb service
+  mongo_db:
+    container_name: db_container
+    image: mongo:latest
+    restart: always
+    ports:
+      - "27017:27017"  # Expose MongoDB port
+    volumes:
+      - mongo_data:/data/db
+
+  # Node api service
+  api:
+    build: .
+    ports:
+      # local->container
+      - 4000:4000
+    environment:
+      PORT: 4000
+      MONGODB_URI: mongodb://mongo_db:27017
+      DB_NAME: anshudb
+      NODE_ENV: developement
+      JWT_SECRET: anshu13$
+      SALT_ROUND: 10
+    depends_on:
+      - mongo_db
+    volumes:
+      - .:/custodial_wallet
+
+  # Package watcher service
+  package-watcher:
+    image: node:latest
+    command: sh -c "npm install -g chokidar-cli && chokidar '/custodial_wallet/package.json' -c 'npm install'"
+    volumes:
+      - .:/custodial_wallet
+    depends_on:
+      - api
+
+volumes:
+  mongo_data: {}
